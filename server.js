@@ -1,4 +1,4 @@
-const {ApolloServer, PubSub} = require('apollo-server');
+const {ApolloServer, PubSub, AuthenticationError, UserInputError, ApolloError} = require('apollo-server');
 const gql = require('graphql-tag');
 
 const pubSub = new PubSub();
@@ -28,6 +28,7 @@ const typeDefs = gql`
   type Query {
       me: User!
       settings(userID: ID!): Settings!
+      testError: String!
   }
   
   type Mutation {
@@ -55,6 +56,10 @@ const resolvers = {
         userID,
         theme: 'dark'
       };
+    },
+
+    testError() {
+      throw new AuthenticationError('not auth');
     }
   },
 
@@ -94,6 +99,14 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  formatError(e) {
+    console.log(e);
+    console.log(e instanceof AuthenticationError);
+    console.log(e instanceof UserInputError);
+    console.log(e instanceof ApolloError);
+    console.log(e instanceof Error);
+    return new Error('My custom error');
+  },
   context({connection}) {
     if (connection) {
       console.log(connection.context, 'connection.context');
