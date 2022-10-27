@@ -2,8 +2,11 @@ const gql = require('graphql-tag')
 
 module.exports = gql`
   
-  directive @formatDate(format: String = "dd MMM yyy") on FIELD_DEFINITION
-  directive @dateFormat(format: String = "dd MMM yyy") on FIELD_DEFINITION
+  directive @formatDate(format: String! = "dd MMM yyy") on FIELD_DEFINITION
+  directive @dateFormat(format: String! = "dd MMM yyy") on FIELD_DEFINITION
+  
+  directive @authenticated on FIELD_DEFINITION
+  directive @authorized(role: Role!) on FIELD_DEFINITION
     
   enum Theme {
     DARK
@@ -89,24 +92,30 @@ module.exports = gql`
   }
 
   type Query {
-    me: User!
-    posts: [Post]!
-    post(id: ID!): Post!
-    userSettings: Settings!
+    me: User! @authenticated
+    posts: [Post]! @authenticated
+    post(id: ID!): Post! @authenticated
+    userSettings: Settings! @authenticated
     feed: [Post]!
   }
 
   type Mutation {
-    updateSettings(input: UpdateSettingsInput!): Settings!
-    createPost(input: NewPostInput!): Post!
-    updateMe(input: UpdateUserInput!): User
-    invite(input: InviteInput!): Invite!
+    updateSettings(input: UpdateSettingsInput!): Settings! @authenticated
+    createPost(input: NewPostInput!): Post! @authenticated
+    updateMe(input: UpdateUserInput!): User @authenticated
+    invite(input: InviteInput!): Invite! @authorized(role: ADMIN) @authenticated
     signup(input: SignupInput!): AuthUser!
     signin(input: SigninInput!): AuthUser!
   }
   
   type Subscription {
-      newPost: Post!
+      newPost: Post! @authorized(role: ADMIN) @authenticated
   }
 
 `
+
+/**
+ * TODO: Execution happens in the opposite direction, right-to-left.
+ * @authenticated @authorized(role: ADMIN)
+ * https://github.com/ardatan/graphql-tools/issues/630
+ */
