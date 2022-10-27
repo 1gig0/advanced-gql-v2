@@ -1,6 +1,10 @@
 const gql = require('graphql-tag')
 
 module.exports = gql`
+  
+  directive @formatDate(format: String = "dd MMM yyy") on FIELD_DEFINITION
+  directive @dateFormat(format: String = "dd MMM yyy") on FIELD_DEFINITION
+    
   enum Theme {
     DARK
     LIGHT
@@ -32,7 +36,7 @@ module.exports = gql`
     id: ID!
     message: String!
     author: User!
-    createdAt: String!
+    createdAt: String! @formatDate
     likes: Int!
     views: Int!
   }
