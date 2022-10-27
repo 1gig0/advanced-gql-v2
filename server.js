@@ -25,10 +25,19 @@ const typeDefs = gql`
       task: String!
   }
   
+  type Post {
+      id: Int!
+      name: String!
+      description: String!
+      relatedPostId: Int! @deprecated(reason: "We use 'postId' filed for it")
+      postId: Int!
+  }
+  
   type Query {
       me: User!
       settings(userID: ID!): Settings!
-      testError: String!
+      testError: String! @deprecated(reason: "We have new error handler for it")
+      post: Post!
   }
   
   type Mutation {
@@ -60,6 +69,16 @@ const resolvers = {
 
     testError() {
       throw new AuthenticationError('not auth');
+    },
+
+    post() {
+      return {
+        id: 3,
+        name: 'test name',
+        description: 'test description',
+        relatedPostId: 7,
+        postId: 7
+      }
     }
   },
 
