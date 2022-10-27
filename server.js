@@ -1,10 +1,47 @@
-const {ApolloServer, PubSub, AuthenticationError, UserInputError, ApolloError} = require('apollo-server');
+const {ApolloServer, PubSub, AuthenticationError, UserInputError, ApolloError, SchemaDirectiveVisitor} = require('apollo-server');
 const gql = require('graphql-tag');
+const {defaultFieldResolver, GraphQLString} = require('graphql');
 
 const pubSub = new PubSub();
 const NEW_ITEM = 'NEW_ITEM';
 
+// class LogDirective extends SchemaDirectiveVisitor {
+//   visitFieldDefinition(field) {
+//     const resolver = field.resolve || defaultFieldResolver;
+//
+//     //Directive argument
+//     const {message} = this.args;
+//
+//     field.resolve = (...args) => {
+//       console.log('logg', message);
+//       return resolver.apply(this, args);
+//     }
+//   }
+// }
+
+class LogDirective extends SchemaDirectiveVisitor {
+  visitFieldDefinition(field) {
+    const resolver = field.resolve || defaultFieldResolver;
+
+    field.args.push({
+      type: GraphQLString,
+      name: 'message'
+    })
+
+    field.resolve = (root, {message, ...rest}, ctx, info) => {
+      const {message: schemaMessage} = this.args;
+
+      console.log('logg', message || schemaMessage);
+
+      return resolver.call(this, root, rest, ctx, info);
+    }
+  }
+}
+
 const typeDefs = gql`
+    
+  directive @log(message: String = "My directive message") on FIELD_DEFINITION
+    
   type User {
       id: ID!
       username: String!
@@ -26,8 +63,8 @@ const typeDefs = gql`
   }
   
   type Post {
-      id: Int!
-      name: String!
+      id: ID!
+      name: String! @log
       description: String!
       relatedPostId: Int! @deprecated(reason: "We use 'postId' filed for it")
       postId: Int!
@@ -118,13 +155,16 @@ const resolvers = {
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  schemaDirectives: {
+    log: LogDirective
+  },
   formatError(e) {
-    console.log(e);
-    console.log(e instanceof AuthenticationError);
-    console.log(e instanceof UserInputError);
-    console.log(e instanceof ApolloError);
-    console.log(e instanceof Error);
-    return new Error('My custom error');
+    // console.log(e);
+    // console.log(e instanceof AuthenticationError);
+    // console.log(e instanceof UserInputError);
+    // console.log(e instanceof ApolloError);
+    // console.log(e instanceof Error);
+    return e;
   },
   context({connection}) {
     if (connection) {
